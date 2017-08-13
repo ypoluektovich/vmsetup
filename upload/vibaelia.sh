@@ -86,7 +86,6 @@ init_chroot_mounts() {
 # setup syslinux bootloader
 setup_syslinux() {
 	local mnt="$1" root="$2" modules="$3" kernel_opts="$4" bootdev="$5"
-	local exlinux_raidopt=
 
 	sed -e "s:^root=.*:root=$root:" \
 		-e "s:^default_kernel_opts=.*:default_kernel_opts=\"$kernel_opts\":" \
@@ -176,7 +175,7 @@ native_disk_install() {
 	# create device nodes if not exist
 	mdev -s
 
-	mkfs.ext4 -q /dev/sda1
+	mkfs.ext4 -q -O '^64bit' /dev/sda1
 
 	### setup_root
 	local root_dev="/dev/sda1" boot_dev="/dev/sda1"
