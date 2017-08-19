@@ -182,9 +182,12 @@ native_disk_install() {
 	local disks="/dev/sda" mkfs_args="-q"
 	mkdir -p "$SYSROOT"
 	mount -t ext4 /dev/sda1 "$SYSROOT"
+	mkdir -p "${SYSROOT}/git"
+	mount -t ext4 /dev/sdb "${SYSROOT}/git"
 
 	install_mounted_root
 
+	umount "${SYSROOT}/git"
 	umount "$SYSROOT"
 }
 
