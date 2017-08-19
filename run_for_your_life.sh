@@ -6,17 +6,19 @@
 RFYL_DEBUG=yes
 
 RFYL_BS_VM_NAME=gitsrv_bs
-
 RFYL_BS_VM_RAM=200
+
+RFYL_PR_VM_NAME=gitsrv
+RFYL_PR_VM_RAM=200
 
 # connect order, pool, name, size, action on completion (keep/drop)
 RFYL_STORAGE_TO_CREATE="\
 1 default gitsrv_root 150MiB keep"
 
-# connect order, pool, name
+# connect order, pool, name, "keep" or not for the production VM
 RFYL_STORAGE_TO_CONNECT="\
 "
-#2 default gitsrv_data"
+#2 default gitsrv_data keep"
 
 
 ###### UTILITIES
@@ -41,6 +43,8 @@ print_error() {
 RFYL_STORAGE_CREATED=""
 RFYL_STORAGE_TO_DROP=""
 RFYL_STORAGE_ORDERED="$RFYL_STORAGE_TO_CONNECT"
+RFYL_STORAGE_BS_ARGS=()
+RFYL_STORAGE_PR_ARGS=()
 
 storage_cleanup() {
 	echo "cleanup: removing disk images"
@@ -63,7 +67,7 @@ storage_cleanup_on_complete() {
 storage_create_all() {
 	echo "creating disk images"
 	[[ -z "$RFYL_STORAGE_TO_CREATE" ]] && echo "no disks to create" && return 0
-	local img_order="" img_pool="" img_name="" img_size="" img_act="" img_rec_del=""
+	local img_order="" img_pool="" img_name="" img_size="" img_act="" img_rec_del="" img_rec=""
 	while read img_order img_pool img_name img_size img_act; do
 		$VIRSH vol-create-as "$img_pool" "$img_name" "$img_size" --format raw || return 1
 
@@ -75,7 +79,8 @@ storage_create_all() {
 			*) echo "unrecognized on-completion act: $img_act"; return 1 ;;
 		esac
 
-		RFYL_STORAGE_ORDERED="${RFYL_STORAGE_ORDERED}${RFYL_STORAGE_ORDERED:+$LINEFEED}${img_order} ${img_pool} ${img_name}"
+		img_rec="${img_order} ${img_pool} ${img_name} ${img_act}"
+		RFYL_STORAGE_ORDERED="${RFYL_STORAGE_ORDERED}${RFYL_STORAGE_ORDERED:+$LINEFEED}${img_rec}"
 	done <<< "$RFYL_STORAGE_TO_CREATE"
 }
 
@@ -87,9 +92,12 @@ storage_check_and_assemble_args() {
 
 	RFYL_STORAGE_ORDERED=$( cut -d" " -f2- <<< "$RFYL_STORAGE_ORDERED" )
 
-	RFYL_STORAGE_ARGS=()
-	while read img_vol img_name; do
-		RFYL_STORAGE_ARGS=( "${RFYL_STORAGE_ARGS[@]}" "--disk" "vol=${img_vol}/${img_name}" )
+	local img_vol="" img_name="" img_act=""
+	while read img_vol img_name img_act; do
+		RFYL_STORAGE_BS_ARGS=( "${RFYL_STORAGE_BS_ARGS[@]}" "--disk" "vol=${img_vol}/${img_name}" )
+		if [[ "$img_act" == "keep" ]]; then
+			RFYL_STORAGE_PR_ARGS=( "${RFYL_STORAGE_PR_ARGS[@]}" "--disk" "vol=${img_vol}/${img_name}" )
+		fi
 	done <<< "$RFYL_STORAGE_ORDERED"
 }
 
@@ -123,7 +131,7 @@ $VIRTINSTALL \
     --ram=${RFYL_BS_VM_RAM} \
     --os-type=linux \
     --cdrom /var/lib/libvirt/images/alpine-virt-3.6.2-x86_64.iso \
-    "${RFYL_STORAGE_ARGS[@]}" \
+    "${RFYL_STORAGE_BS_ARGS[@]}" \
     --network=network=default,model=virtio \
     --graphics none \
     --livecd --noautoconsole --transient
@@ -156,5 +164,19 @@ exec_ssh ssh root@$RFYL_BS_VM_IP './vibaelia.sh'
 exec_ssh ssh root@$RFYL_BS_VM_IP 'poweroff'
 
 while $VIRSH domid $RFYL_BS_VM_NAME >/dev/null 2>&1; do sleep 1; done
+
+trap 'print_error; storage_cleanup_on_abort; exit 1' ERR
+
+$VIRTINSTALL \
+    ${RFYL_DEBUG:+ --debug} \
+    --name=${RFYL_PR_VM_NAME} \
+    --vcpus=1 --cpu host \
+    --ram=${RFYL_PR_VM_RAM} \
+    --os-type=linux \
+    --import \
+    "${RFYL_STORAGE_PR_ARGS[@]}" \
+    --network=network=default,model=virtio \
+    --graphics none \
+    --noautoconsole --noreboot
 
 storage_cleanup_on_complete
