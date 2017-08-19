@@ -2,23 +2,45 @@
 
 ###### CONFIGURATION
 
-# unset or set to null to disable debug mode
-RFYL_DEBUG=yes
+if [[ "$#" -eq 0 ]]; then
+	echo "specify RFYL profile directory as a parameter" >&2
+	exit 1
+fi
 
-RFYL_BS_VM_NAME=gitsrv_bs
-RFYL_BS_VM_RAM=200
+RFYL_PROFILE="$1"
+shift
+RFYL_PROFILE=$( realpath "$RFYL_PROFILE" )
+echo "using profile $RFYL_PROFILE"
 
-RFYL_PR_VM_NAME=gitsrv
-RFYL_PR_VM_RAM=200
+if [[ ! -d "$RFYL_PROFILE" ]]; then
+	echo "specified profile does not exist or is not a directory"
+	exit 1
+fi
 
+if [[ ! -f "$RFYL_PROFILE/config.sh" ]]; then
+	echo "missing or bad config.sh in the profile"
+	exit 1
+fi
+
+
+# set to any non-null value to enable debug mode
+RFYL_DEBUG=
+# name of the transient bootstrap VM
+RFYL_BS_VM_NAME=
+# integer value, in megabytes
+RFYL_BS_VM_RAM=
+# name of the production VM
+RFYL_PR_VM_NAME=
+# integer value, in megabytes
+RFYL_PR_VM_RAM=
 # connect order, pool, name, size, action on completion (keep/drop)
-RFYL_STORAGE_TO_CREATE="\
-1 default gitsrv_root 150MiB keep"
-
+RFYL_STORAGE_TO_CREATE=""
 # connect order, pool, name, "keep" or not for the production VM
-RFYL_STORAGE_TO_CONNECT="\
-"
-#2 default gitsrv_data keep"
+RFYL_STORAGE_TO_CONNECT=""
+
+source "$RFYL_PROFILE/config.sh"
+
+# todo: validate config
 
 
 ###### UTILITIES
