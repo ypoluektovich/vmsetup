@@ -2,7 +2,7 @@
 
 set -xe
 
-source utilities.sh
+source early_utils.sh
 
 echo -e "1\n1" | passwd
 

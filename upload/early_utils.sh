@@ -1,4 +1,5 @@
-#!/usr/bin/env sh
+#!/bin/false
+# this is not a thing to be executed on its own
 
 setup_interfaces() {
 	local ROOT="$1" FILE="$2"

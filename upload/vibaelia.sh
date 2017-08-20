@@ -2,7 +2,7 @@
 
 set -xe
 
-source utilities.sh
+source early_utils.sh
 
 rc-update --quiet add networking boot
 rc-update --quiet add urandom boot
@@ -134,16 +134,18 @@ install_mounted_root() {
 
 	chroot_caps=$(set_grsec chroot_caps 0)
 	init_chroot_mounts "$mnt"
-	local CHROOTED="chroot $mnt"
+
+	source vibaelia_utils.sh
 
 	### INSTALL
     local THERE="--root $mnt"
 	apk add $THERE --initdb
 	add_apk_repositories "$mnt/"
 	apk update $THERE --quiet --allow-untrusted
-	apk add $THERE --quiet --no-cache --allow-untrusted alpine-keys
+	$APK_ADD --allow-untrusted alpine-keys
 	apk update $THERE --quiet
-	apk add $THERE --quiet --no-cache `cat pkgs.txt`
+	$APK_ADD `cat pkgs.txt`
+	[[ -f profile/pkgs.txt ]] && $APK_ADD `cat profile/pkgs.txt`
 	### / INSTALL
 
 	### copy stuff from bootstrap install
@@ -170,10 +172,15 @@ install_mounted_root() {
 	cp profile/root_authorized_keys.txt "$mnt/etc/ssh/users/root/authorized_keys"
 
 	### set up user accounts
-	local username= userix=0
-	while read username; do
+	local username= userhome= userhomeargs= usershell= userix=0
+	while read username userhome usershell; do
 		echo "setting up user ${username} with id $((1000 + userix))"
-        ./random-passwd-input.sh | $CHROOTED adduser "$username" -G users -s /sbin/nologin
+		case "$userhome" in
+			"-") userhomeargs="-H" ;;
+			*) userhomeargs="-h $userhome" ;;
+		esac
+
+        ./random-passwd-input.sh | $CHROOTED adduser -u $((1000 + userix)) $userhomeargs -s $usershell $username users
 		mkdir -p "$mnt/etc/ssh/users/$username"
 		cp "profile/users/$username/authorized_keys.txt" "$mnt/etc/ssh/users/$username/authorized_keys"
 		$CHROOTED chown -R "$username:users" "/etc/ssh/users/$username"

@@ -163,7 +163,7 @@ trap 'print_error; destroy_domain; storage_cleanup_on_abort; exit 1' ERR
 
 ./px_run.py $RFYL_BS_VM_NAME "mount -o remount,size=1M /dev/shm; mount -o remount,size=$((RFYL_BS_VM_RAM - 5))M /"
 
-./px_up.py $RFYL_BS_VM_NAME utilities.sh
+./px_up.py $RFYL_BS_VM_NAME early_utils.sh
 ./px_up.py $RFYL_BS_VM_NAME interfaces.txt
 ./px_up.py $RFYL_BS_VM_NAME bs_sshd_config.txt
 ./px_up.py $RFYL_BS_VM_NAME zero-to-ssh.sh
@@ -182,7 +182,6 @@ exec_ssh scp upload/* root@$RFYL_BS_VM_IP:.
 exec_ssh ssh root@$RFYL_BS_VM_IP 'chmod +x *.sh'
 
 exec_ssh scp -r "${RFYL_PROFILE}/upload" root@$RFYL_BS_VM_IP:profile
-exec_ssh ssh root@$RFYL_BS_VM_IP 'chmod +x profile/vibaelia.sh'
 
 exec_ssh ssh root@$RFYL_BS_VM_IP './vibaelia.sh'
 
