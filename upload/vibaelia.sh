@@ -107,8 +107,7 @@ install_mounted_root() {
 	shift 1
 	local disks="/dev/sda" root_fs=
 	local initfs_features="ata base ide scsi usb virtio"
-	local pvs= dev= rootdev= bootdev= extlinux_raidopt= root= modules=
-#	local kernel_opts="quiet"
+	local rootdev= bootdev= root= modules=
 	local kernel_opts=""
 
 	rootdev="/dev/sda1"
@@ -137,9 +136,9 @@ install_mounted_root() {
 	init_chroot_mounts "$mnt"
 
 	### INSTALL
-    local THERE="--root /mnt"
+    local THERE="--root $mnt"
 	apk add $THERE --initdb
-	add_apk_repositories "/mnt/"
+	add_apk_repositories "$mnt/"
 	apk update $THERE --quiet --allow-untrusted
 	apk add $THERE --quiet --no-cache --allow-untrusted alpine-keys
 	apk update $THERE --quiet
@@ -160,6 +159,16 @@ install_mounted_root() {
 
 	setup_interfaces "$mnt/" "interfaces.txt"
 	setup_tz "$mnt/"
+
+	### set up sshd
+	# openssh-server is already installed, just need to copy configs into place
+	mkdir -p "$mnt/etc/ssh"
+	cp profile/ssh_host_keys/* "$mnt/etc/ssh"
+	cp profile/sshd_config.txt "$mnt/etc/ssh/sshd_config"
+	chmod 400 "$mnt"/etc/ssh/*
+	mkdir -p "$mnt/root/.ssh"
+	cp profile/root_authorized_keys.txt "$mnt/root/.ssh/authorized_keys"
+	chmod 400 "$mnt"/root/.ssh/*
 }
 
 native_disk_install() {
