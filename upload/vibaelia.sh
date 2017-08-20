@@ -182,6 +182,8 @@ install_mounted_root() {
 
 	chmod -R a=X,u+r "$mnt"/etc/ssh
 
+	[[ -f profile/vibaelia.sh ]] && ./profile/vibaelia.sh
+
 	cleanup_chroot_mounts "$mnt"
 	set_grsec chroot_caps $chroot_caps > /dev/null
 }

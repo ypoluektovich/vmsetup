@@ -182,6 +182,7 @@ exec_ssh scp upload/* root@$RFYL_BS_VM_IP:.
 exec_ssh ssh root@$RFYL_BS_VM_IP 'chmod +x *.sh'
 
 exec_ssh scp -r "${RFYL_PROFILE}/upload" root@$RFYL_BS_VM_IP:profile
+exec_ssh ssh root@$RFYL_BS_VM_IP 'chmod +x profile/vibaelia.sh'
 
 exec_ssh ssh root@$RFYL_BS_VM_IP './vibaelia.sh'
 
