@@ -151,7 +151,7 @@ $VIRTINSTALL \
     --name=${RFYL_BS_VM_NAME} \
     --vcpus=1 --cpu host \
     --ram=${RFYL_BS_VM_RAM} \
-    --os-type=linux \
+    --os-type=linux --os-variant=generic \
     --cdrom /var/lib/libvirt/images/alpine-virt-3.6.2-x86_64.iso \
     "${RFYL_STORAGE_BS_ARGS[@]}" \
     --network=network=default,model=virtio \
@@ -196,7 +196,7 @@ $VIRTINSTALL \
     --name=${RFYL_PR_VM_NAME} \
     --vcpus=1 --cpu host \
     --ram=${RFYL_PR_VM_RAM} \
-    --os-type=linux \
+    --os-type=linux --os-variant=generic \
     --import \
     "${RFYL_STORAGE_PR_ARGS[@]}" \
     --network=network=default,model=virtio \
