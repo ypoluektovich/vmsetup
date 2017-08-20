@@ -95,10 +95,6 @@ setup_syslinux() {
 	extlinux --install "$mnt"/boot
 }
 
-generate_random_password() {
-	cat /dev/urandom | tr -dc A-Za-z0-9 | head -c 32
-}
-
 cleanup_chroot_mounts() {
 	local mnt="$1" i=
 	for i in proc dev; do
@@ -138,6 +134,7 @@ install_mounted_root() {
 
 	chroot_caps=$(set_grsec chroot_caps 0)
 	init_chroot_mounts "$mnt"
+	local CHROOTED="chroot $mnt"
 
 	### INSTALL
     local THERE="--root $mnt"
@@ -166,14 +163,24 @@ install_mounted_root() {
 	mkdir -p "$mnt/etc/ssh"
 	cp profile/ssh_host_keys/* "$mnt/etc/ssh"
 	cp profile/sshd_config.txt "$mnt/etc/ssh/sshd_config"
-	chmod 400 "$mnt"/etc/ssh/*
-	mkdir -p "$mnt/root/.ssh"
-	cp profile/root_authorized_keys.txt "$mnt/root/.ssh/authorized_keys"
-	chmod 400 "$mnt"/root/.ssh/*
 
-	### set random root password
-	local randompass=$( generate_random_password )
-	echo -e "${randompass}\n${randompass}" | chroot "$mnt" passwd
+	### set up root account
+	./random-passwd-input.sh | $CHROOTED passwd
+	mkdir -p "$mnt/etc/ssh/users/root"
+	cp profile/root_authorized_keys.txt "$mnt/etc/ssh/users/root/authorized_keys"
+
+	### set up user accounts
+	local username= userix=0
+	while read username; do
+		echo "setting up user ${username} with id $((1000 + userix))"
+        ./random-passwd-input.sh | $CHROOTED adduser "$username" -G users -s /sbin/nologin
+		mkdir -p "$mnt/etc/ssh/users/$username"
+		cp "profile/users/$username/authorized_keys.txt" "$mnt/etc/ssh/users/$username/authorized_keys"
+		$CHROOTED chown -R "$username:users" "/etc/ssh/users/$username"
+		userix=$((userix + 1))
+	done < profile/users/users.txt
+
+	chmod -R a=X,u+r "$mnt"/etc/ssh
 
 	cleanup_chroot_mounts "$mnt"
 	set_grsec chroot_caps $chroot_caps > /dev/null
