@@ -95,6 +95,10 @@ setup_syslinux() {
 	extlinux --install "$mnt"/boot
 }
 
+generate_random_password() {
+	cat /dev/urandom | tr -dc A-Za-z0-9 | head -c 32
+}
+
 cleanup_chroot_mounts() {
 	local mnt="$1" i=
 	for i in proc dev; do
@@ -145,9 +149,6 @@ install_mounted_root() {
 	apk add $THERE --quiet --no-cache `cat pkgs.txt`
 	### / INSTALL
 
-	cleanup_chroot_mounts "$mnt"
-	set_grsec chroot_caps $chroot_caps > /dev/null
-
 	### copy stuff from bootstrap install
 	# enabled services
 	cp -ra /etc/runlevels/* "$mnt/etc/runlevels"
@@ -169,6 +170,13 @@ install_mounted_root() {
 	mkdir -p "$mnt/root/.ssh"
 	cp profile/root_authorized_keys.txt "$mnt/root/.ssh/authorized_keys"
 	chmod 400 "$mnt"/root/.ssh/*
+
+	### set random root password
+	local randompass=$( generate_random_password )
+	echo -e "${randompass}\n${randompass}" | chroot "$mnt" passwd
+
+	cleanup_chroot_mounts "$mnt"
+	set_grsec chroot_caps $chroot_caps > /dev/null
 }
 
 native_disk_install() {
