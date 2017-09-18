@@ -157,7 +157,7 @@ install_mounted_root() {
 	# we should not try start modloop on sys install
 	rm -f "$mnt"/etc/runlevels/*/modloop
 
-	setup_interfaces "$mnt/" "interfaces.txt"
+	setup_interfaces "$mnt/" "profile/interfaces.txt"
 	setup_tz "$mnt/"
 
 	### set up sshd

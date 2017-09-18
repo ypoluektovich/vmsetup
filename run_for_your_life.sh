@@ -29,10 +29,14 @@ RFYL_DEBUG=
 RFYL_BS_VM_NAME=
 # integer value, in megabytes
 RFYL_BS_VM_RAM=
+# name of the virsh network for the bootstrap VM
+RFYL_BS_NET=
 # name of the production VM
 RFYL_PR_VM_NAME=
 # integer value, in megabytes
 RFYL_PR_VM_RAM=
+# name of the virsh network for the production VM
+RFYL_PR_NET=
 # connect order, pool, name, size, action on completion (keep/drop)
 RFYL_STORAGE_TO_CREATE=""
 # connect order, pool, name, "keep" or not for the production VM
@@ -154,7 +158,7 @@ $VIRTINSTALL \
     --os-type=linux --os-variant=generic \
     --cdrom /var/lib/libvirt/images/alpine-virt-3.6.2-x86_64.iso \
     "${RFYL_STORAGE_BS_ARGS[@]}" \
-    --network=network=default,model=virtio \
+    --network=network="$RFYL_BS_NET",model=virtio \
     --graphics none \
     --livecd --noautoconsole --transient
 
@@ -199,7 +203,7 @@ $VIRTINSTALL \
     --os-type=linux --os-variant=generic \
     --import \
     "${RFYL_STORAGE_PR_ARGS[@]}" \
-    --network=network=default,model=virtio \
+    --network=network="$RFYL_PR_NET",model=virtio \
     --graphics none \
     --noautoconsole --noreboot
 
