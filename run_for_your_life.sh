@@ -41,6 +41,10 @@ RFYL_PR_NET=
 RFYL_STORAGE_TO_CREATE=""
 # connect order, pool, name, "keep" or not for the production VM
 RFYL_STORAGE_TO_CONNECT=""
+# device, [mbr], space-separated sfdisk lines
+RFYL_STORAGE_MKPART=""
+# device, mount point
+RFYL_STORAGE_MOUNT=""
 
 source "$RFYL_PROFILE/config.sh"
 
@@ -58,7 +62,10 @@ LINEFEED="
 "
 
 print_error() {
-	echo "/!\ there was an error ($?); script will now abort"
+	local lastcode="$?"
+	echo ""
+	echo "/!\ there was an error ($lastcode); script will now abort"
+	echo ""
 }
 
 
@@ -186,6 +193,9 @@ exec_ssh scp upload/* root@$RFYL_BS_VM_IP:.
 exec_ssh ssh root@$RFYL_BS_VM_IP 'chmod +x *.sh'
 
 exec_ssh scp -r "${RFYL_PROFILE}/upload" root@$RFYL_BS_VM_IP:profile
+
+exec_ssh ssh root@$RFYL_BS_VM_IP 'cat >mkpart.txt' <<<"$RFYL_STORAGE_MKPART"
+exec_ssh ssh root@$RFYL_BS_VM_IP 'cat >mount.txt' <<<"$RFYL_STORAGE_MOUNT"
 
 exec_ssh ssh root@$RFYL_BS_VM_IP './vibaelia.sh'
 
